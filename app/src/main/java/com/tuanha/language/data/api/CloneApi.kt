@@ -53,6 +53,7 @@ interface CloneApi {
     class VideoMetaDataDetail(
 
         val title: String = "",
+        val publishDate: String = "",
         val externalChannelId: String = "",
 
         val thumbnail: VideoMetaDataThumbnail = VideoMetaDataThumbnail(),

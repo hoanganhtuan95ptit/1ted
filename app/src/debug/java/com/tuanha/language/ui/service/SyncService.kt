@@ -8,10 +8,7 @@ import android.util.Log
 import androidx.annotation.Keep
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.tuanha.core.utils.extentions.toArrayList
-import com.tuanha.core.utils.extentions.toJson
-import com.tuanha.core.utils.extentions.toListObject
-import com.tuanha.core.utils.extentions.toObject
+import com.tuanha.core.utils.extentions.*
 import com.tuanha.coreapp.ui.servicer.BaseForegroundService
 import com.tuanha.coreapp.utils.extentions.serviceScope
 import com.tuanha.language.App
@@ -36,18 +33,26 @@ class SyncService : BaseForegroundService() {
 
         val latinCrawl = LatinCrawl()
 
+        val idAndVideos = hashMapOf<String, Video>()
+
         serviceScope.launch(handler + Dispatchers.IO) {
 
-            val videoId = "uEATpbQ9md4"
+
+            val videoId = "CyElHdaqkjo"
             val languageCode = "en"
+
+            val fileAllVideos = getFile("video/$languageCode.json")
+            idAndVideos.putAll(readFile(fileAllVideos.absolutePath).toListObject(Video::class.java).toArrayList().associateBy { it.id }.toMutableMap())
+
+            if (idAndVideos.containsKey(videoId)) return@launch
 
             val metaData = cloneApi.fetchVideoInfo(CloneApi.SubtitleParam(videoId, languageCode)).data ?: return@launch
 
             var subtitles = cloneApi.fetchSubtitles(CloneApi.SubtitleParam(videoId, languageCode)).data ?: return@launch
 
-            val urlImg = metaData.videoDetails.thumbnail.thumbnails.sortedByDescending {
+            val urlImg = metaData.videoDetails.thumbnail.thumbnails.maxByOrNull {
                 it.height + it.width
-            }.firstOrNull()?.url ?: return@launch
+            }?.url ?: return@launch
 
             val urlMp3 = metaData.formats.firstOrNull {
                 it.mimeType.contains("audio/webm")
@@ -96,22 +101,18 @@ class SyncService : BaseForegroundService() {
             Log.d("tuanha", "onCreate: $videoId mp4 completed ${urlMp4}")
 
 
-
-            val fileAllVideos = getFile("video/$languageCode.json")
-            val videos = readFile(fileAllVideos.absolutePath).toListObject(Video::class.java).toArrayList().associateBy { it.id }.toMutableMap()
-            videos[videoId] = (Video(videoId, metaData.videoDetails.title, metaData.videoDetails.externalChannelId, metaData.videoDetails.keywords))
-            writeFile(fileAllVideos.absolutePath, videos.values.toJson())
+            idAndVideos[videoId] =
+                (Video(videoId, metaData.videoDetails.title, metaData.videoDetails.externalChannelId, metaData.videoDetails.publishDate.dateToLong(), metaData.videoDetails.keywords))
+            writeFile(fileAllVideos.absolutePath, idAndVideos.values.toJson())
 
 
-
-            val pages = videos.values.filter { it.channelId == metaData.videoDetails.externalChannelId }.chunked(20).mapIndexed { index, list ->
+            val pages = idAndVideos.values.filter { it.channelId == metaData.videoDetails.externalChannelId }.sortedByDescending { it.publishDate }.chunked(20).mapIndexed { index, list ->
 
                 val fileVideos = getFile("video/$languageCode/${metaData.videoDetails.externalChannelId}/$index.json")
                 writeFile(fileVideos.absolutePath, list.toJson())
 
                 index
             }
-
 
 
             val fileConfig = getFile("config.json")

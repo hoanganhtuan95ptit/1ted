@@ -14,7 +14,25 @@ import java.util.*
 data class Video(
 
     var id: String = UUID.randomUUID().toString(),
+
     var title: String = "",
     var channelId: String = "",
+
+    var publishDate: Long = Long.MIN_VALUE,
+
     var keywords: List<String> = emptyList(),
-) : Parcelable
+) : Parcelable {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Video) return false
+
+        if (id != other.id) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+}
