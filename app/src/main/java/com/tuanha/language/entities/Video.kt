@@ -14,6 +14,6 @@ import java.util.*
 data class Video(
 
     var id: String = UUID.randomUUID().toString(),
-    var title: String,
+    var title: String = "",
     var keywords: List<String> = emptyList(),
 ) : Parcelable

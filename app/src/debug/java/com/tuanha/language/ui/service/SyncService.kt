@@ -110,12 +110,12 @@ class SyncService : BaseForegroundService() {
             }
 
 
-            val fileConfig = getFile("video.json")
+            val fileConfig = getFile("config.json")
             val config = readFile(fileAllVideos.absolutePath).runCatching { toObject(Config::class.java) }.getOrNull() ?: Config()
             config.videos = config.videos.toMutableMap().apply {
                 put(languageCode, pages.size)
             }
-            writeFile(fileConfig.absolutePath, fileConfig.toJson())
+            writeFile(fileConfig.absolutePath, config.toJson())
 
             Log.d("tuanha", "onCreate: $videoId end")
         }
@@ -194,7 +194,7 @@ class SyncService : BaseForegroundService() {
             val u = URL(url)
             val `is`: InputStream = u.openStream()
             val dis = DataInputStream(`is`)
-            val buffer = ByteArray(1024)
+            val buffer = ByteArray(20 * 1024)
             var length: Int
             val fos = FileOutputStream(outputFile)
             while (dis.read(buffer).also { length = it } > 0) {
