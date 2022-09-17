@@ -95,27 +95,37 @@ class SyncService : BaseForegroundService() {
 
             Log.d("tuanha", "onCreate: $videoId mp4 completed ${urlMp4}")
 
+
+
             val fileAllVideos = getFile("video/$languageCode.json")
-            val videos = readFile(fileAllVideos.absolutePath).toListObject(Video::class.java).toArrayList()
-            videos.add((Video(videoId, metaData.videoDetails.title, metaData.videoDetails.keywords)))
-            writeFile(fileAllVideos.absolutePath, videos.toJson())
+            val videos = readFile(fileAllVideos.absolutePath).toListObject(Video::class.java).toArrayList().associateBy { it.id }.toMutableMap()
+            videos[videoId] = (Video(videoId, metaData.videoDetails.title, metaData.videoDetails.externalChannelId, metaData.videoDetails.keywords))
+            writeFile(fileAllVideos.absolutePath, videos.values.toJson())
 
 
-            val pages = videos.chunked(20).mapIndexed { index, list ->
 
-                val fileVideos = getFile("video/$languageCode/$index.json")
+            val pages = videos.values.filter { it.channelId == metaData.videoDetails.externalChannelId }.chunked(20).mapIndexed { index, list ->
+
+                val fileVideos = getFile("video/$languageCode/${metaData.videoDetails.externalChannelId}/$index.json")
                 writeFile(fileVideos.absolutePath, list.toJson())
 
                 index
             }
 
 
+
             val fileConfig = getFile("config.json")
             val config = readFile(fileAllVideos.absolutePath).runCatching { toObject(Config::class.java) }.getOrNull() ?: Config()
+
             config.videos = config.videos.toMutableMap().apply {
-                put(languageCode, pages.size)
+
+                val videoChannelList = (get(languageCode)?.toMutableMap() ?: hashMapOf()).apply {
+                    put(metaData.videoDetails.externalChannelId, pages.size)
+                }
+                put(languageCode, videoChannelList)
             }
             writeFile(fileConfig.absolutePath, config.toJson())
+
 
             Log.d("tuanha", "onCreate: $videoId end")
         }
@@ -216,6 +226,6 @@ class SyncService : BaseForegroundService() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Config(
 
-        var videos: Map<String, Int> = mapOf()
+        var videos: Map<String, Map<String, Int>> = mapOf()
     ) : Parcelable
 }

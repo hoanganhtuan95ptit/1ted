@@ -52,9 +52,10 @@ interface CloneApi {
     @JsonIgnoreProperties(ignoreUnknown = true)
     class VideoMetaDataDetail(
 
-        val thumbnail: VideoMetaDataThumbnail = VideoMetaDataThumbnail(),
-
         val title: String = "",
+        val externalChannelId: String = "",
+
+        val thumbnail: VideoMetaDataThumbnail = VideoMetaDataThumbnail(),
         val keywords: List<String> = emptyList()
     ) : Parcelable
 

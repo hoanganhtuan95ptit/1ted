@@ -15,5 +15,6 @@ data class Video(
 
     var id: String = UUID.randomUUID().toString(),
     var title: String = "",
+    var channelId: String = "",
     var keywords: List<String> = emptyList(),
 ) : Parcelable
